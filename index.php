@@ -1,15 +1,16 @@
 <?php
 require './vendor/autoload.php';
 
+//  Read https://github.com/nikic/FastRoute
 $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
     $r->get('/', 'loadHome');
     $r->get('/queue', 'getAllQueues');
     $r->post('/queue', 'createQueue');
     // {name} can be any alphanumeric string
     $r->get('/queue/{name:\w+}', 'getQueue'); 
-    $r->delete('/queue/{name:\w+}', 'deleteQueue'); #untested
+    $r->delete('/queue/{id:\d+}', 'deleteQueue');
     $r->post('/join', 'joinQueue');
-    $r->put('/queue/:id', 'updateQueue'); #untested
+    $r->post('/update/{id:\d+}', 'updateQueue'); #untested
 });
 
 $db = new SQLite3('queue.sqlite');
@@ -93,27 +94,25 @@ function getQueue($db, $vars) {
 }
 
 // UpdateQueue
-function updateQueue($db, $id) {
+function updateQueue($db, $vars) {
     $name = $_POST['name'];
     $current = $_POST['current'];
     $lastPosition = $_POST['last_position'];
-
-    $sql = 'UPDATE queue SET name = ?, current = ?, last_position = ? WHERE id = ?';
+    $id = $vars['id'];
+    $sql = 'UPDATE queue SET name = :name, current = :current, last_position = :last_position WHERE id = :id';
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(1, $name);
-    $stmt->bindParam(2, $current);
-    $stmt->bindParam(3, $lastPosition);
-    $stmt->bindParam(4, $id);
+    $stmt->bindParam(":name", $name);
+    $stmt->bindParam(":current", $current);
+    $stmt->bindParam(":last_position", $lastPosition);
+    $stmt->bindParam(":id", $id);
     $stmt->execute();
-
-    echo_json(['id' => $id]);
 }
 
 // DeleteQueue
-function deleteQueue($db, $id) {
-    $sql = 'DELETE FROM queue WHERE id = :id';
+function deleteQueue($db, $vars) {
+    $sql = 'DELETE FROM queue WHERE name = :name';
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(':id', $id);
+    $stmt->bindParam(':name', $vars['name']);
     $stmt->execute();
 
     header('HTTP/1.1 204 No Content');
