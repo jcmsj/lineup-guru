@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Queue Manager</title>
+</head>
+<body>
+    <h1>Queue Manager</h1>
+
+    <form action="/join" method="post" >
+        <div id="queue-list">
+
+        </div>
+        <input type="submit" value="Join queue">
+    </form>
+
+    <form action="/queue" method="post">
+        <input type="text" name="name" placeholder="Queue name">
+        <input type="submit" value="Create queue">
+    </form>
+
+    <script>
+        // Get all queues
+        async function getAllQueues() {
+            const response = await fetch('/queue');
+            const queues = await response.json();
+
+            // Display the queues
+            const queueList = document.getElementById('queue-list');
+            queues.forEach(queue => {
+                queueList.innerHTML += `<label for='queue-${queue.name}'>${queue.name}</label><input type=radio id='queue-${queue.name}' name="name" value="${queue.name}"><br>`;
+            });
+        }
+
+        // Create a new queue
+        async function createQueue() {
+            const name = document.querySelector('input[name="name"]').value;
+
+            const response = await fetch('/queue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+
+            const queue = await response.json();
+
+            // Add the new queue to the list
+            const queueList = document.getElementById('queue-list');
+            queueList.innerHTML += `<li>${queue.name}</li>`;
+        }
+
+        // Join a queue
+        async function joinQueue(name) {
+            const response = await fetch(`/join`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name
+                }),
+            });
+
+            const number = await response.text();
+
+            alert(`You are now number ${number} in the queue.`);
+        }
+
+        // On page load, get all queues
+        getAllQueues();
+    </script>
+</body>
+</html>
