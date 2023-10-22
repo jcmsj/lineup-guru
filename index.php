@@ -1,6 +1,8 @@
 <?php
 require './vendor/autoload.php';
-
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST');
+header("Access-Control-Allow-Headers: X-Requested-With");
 //  Read https://github.com/nikic/FastRoute
 $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
     $r->get('/', 'loadHome');
@@ -9,8 +11,8 @@ $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
     // {name} can be any alphanumeric string
     $r->get('/queue/{name:\w+}', 'getQueue'); 
     $r->delete('/queue/{id:\d+}', 'deleteQueue');
-    $r->post('/join', 'joinQueue');
-    $r->post('/update/{id:\d+}', 'updateQueue'); #untested
+    $r->post('/join/{id:\d+}', 'joinQueue');
+    $r->post('/update/{id:\d+}', 'updateQueue');
 });
 
 $db = new SQLite3('queue.sqlite');
@@ -65,16 +67,14 @@ function getAllQueues($db) {
     echo_json($queues);
 }
 
-// CreateQueue
 function createQueue($db) {
     /** @var string */
-    $name = demand('name');
+    $name = $_POST['name'];
     $sql = 'INSERT INTO queue (name, current, last_position) VALUES (:name, 0, 0)';
     $stmt = $db->prepare($sql);
     $stmt->bindParam(':name', $name);
     $stmt->execute();
     $id = $db->lastInsertRowID();
-
     echo_json(['id' => $id]);
 }
 
@@ -126,19 +126,19 @@ function demand($key) {
     }
     return $_REQUEST[$key];
 }
-function joinQueue($db) {
+function joinQueue($db, $vars) {
     /** @var string */
-    $name = demand('name');
-    $sql = 'SELECT last_position FROM queue WHERE name = :name';
+    $id = $vars['id'];
+    $sql = 'SELECT last_position FROM queue WHERE id = :id';
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(':name', $name);
+    $stmt->bindParam(':id', $id);
     $result = $stmt->execute();
 
     if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $new_pos = $row['last_position'] + 1;
-        $update = 'UPDATE queue SET last_position = :last_pos WHERE name = :name';
+        $update = 'UPDATE queue SET last_position = :last_pos WHERE id = :id';
         $stmt2 = $db->prepare($update);
-        $stmt2->bindParam(':name', $name);
+        $stmt2->bindParam(':id', $id);
         $stmt2->bindParam(':last_pos', $new_pos);
         $result = $stmt2->execute();
         echo_json(['number'=>$new_pos]);
