@@ -54,7 +54,7 @@ function setup($db) {
 function loadHome() {
     echo file_get_contents('index.html');
 }
-// GetAllQueues
+
 function getAllQueues($db) {
     $sql = 'SELECT * FROM queue';
     $result = $db->query($sql);
@@ -95,16 +95,16 @@ function getQueue($db, $vars) {
 
 // UpdateQueue
 function updateQueue($db, $vars) {
+    $id = $vars['id'];
     $name = $_POST['name'];
     $current = $_POST['current'];
     $lastPosition = $_POST['last_position'];
-    $id = $vars['id'];
     $sql = 'UPDATE queue SET name = :name, current = :current, last_position = :last_position WHERE id = :id';
     $stmt = $db->prepare($sql);
+    $stmt->bindParam(":id", $id);
     $stmt->bindParam(":name", $name);
     $stmt->bindParam(":current", $current);
     $stmt->bindParam(":last_position", $lastPosition);
-    $stmt->bindParam(":id", $id);
     $stmt->execute();
 }
 
